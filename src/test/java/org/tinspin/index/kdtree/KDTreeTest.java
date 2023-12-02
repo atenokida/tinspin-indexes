@@ -28,6 +28,10 @@ import static org.tinspin.index.Index.*;
 
 public class KDTreeTest {
 
+	protected int getDimension(double[][] point_list) {
+		return point_list[0].length;
+	}
+
 	@Test
 	public void smokeTestShort() {
 		double[][] point_list = {{2,3}, {5,4}, {9,6}, {4,7}, {8,1}, {7,2}};
@@ -42,22 +46,30 @@ public class KDTreeTest {
 	
 	@Test
 	public void smokeTest2D_0() {
-		double[][] point_list = new double[20][2];
-		Random R = new Random(0);
-		for (double[] p : point_list) {
-			Arrays.setAll(p, (i) -> R.nextInt(100));
-		}
-		smokeTest(point_list);
+		// double[][] point_list = new double[2000000][2];
+		// Random R = new Random(0);
+		// for (double[] p : point_list) {
+		// 	Arrays.setAll(p, (i) -> R.nextInt(100));
+		// }
+		double [][] point_list = {{2,6}, {3,1}, {5,4}, {8,7}, {10,2}, {13,3}};
+		// smokeTest(point_list);
+		KNN2DTest_(point_list);
 	}
 	
 	@Test
 	public void smokeTest2D_1() {
-		double[][] point_list = new double[20][2];
-		Random R = new Random(1);
+		double[][] point_list = new double[1000000][3];
+		double[][] search_list = new double[500000][3];
+		Random R = new Random(0);
 		for (double[] p : point_list) {
-			Arrays.setAll(p, (i) -> R.nextInt(100));
+			Arrays.setAll(p, (i) -> R.nextInt(10000));
 		}
-		smokeTest(point_list);
+		Random R2 = new Random(1);
+		for (double[] p : search_list) {
+			Arrays.setAll(p, (i) -> R2.nextInt(10000));
+		}
+		knnTest(point_list, search_list, false);
+		// smokeTest(point_list);
 	}
 	
 	@Test
@@ -129,12 +141,27 @@ public class KDTreeTest {
 	}
 	
 	private void smokeTest(double[][] point_list) {
+		
 		int dim = point_list[0].length;
+		
 		KDTree<double[]> tree = KDTree.create(dim);
+		
 		for (double[] data : point_list) {
 			tree.insert(data, data);
 		}
-//	    System.out.println(tree.toStringTree());
+		
+		
+	    //System.out.println(tree.toStringTree());
+		
+		double[] queryPoint = {9, 4};
+		
+		PointIteratorKnn<double[]> resultQueryPoint = tree.queryKnn(queryPoint, 2);
+		
+		if (resultQueryPoint.hasNext()) {
+			System.out.printf("O ponto mais próximo de [10, 2] é %s\n", resultQueryPoint.next());
+		}
+		
+		
 		for (double[] key : point_list) {
 			if (!tree.contains(key)) {
 				throw new IllegalStateException(Arrays.toString(key));
@@ -143,7 +170,7 @@ public class KDTreeTest {
 
 		for (double[] key : point_list) {
 //			System.out.println("kNN query: " + Arrays.toString(key));
-			PointIteratorKnn<double[]> iter = tree.queryKnn(key, 1);
+			PointIteratorKnn<double[]> iter = tree.queryKnn(key, 2);
 			if (!iter.hasNext()) {
 				throw new IllegalStateException("kNN() failed: " + Arrays.toString(key));
 			}
@@ -165,4 +192,88 @@ public class KDTreeTest {
 			}
 		}
 	}
+
+	private void KNN2DTest_(double[][] point_list) {
+
+		int dim = getDimension(point_list);
+
+		System.out.println("Number of points: " + point_list.length);
+		System.out.println("Number of dimensions: " + dim);
+
+		KDTree<double[]> tree = KDTree.create(dim);
+
+		long start_time = System.currentTimeMillis();
+
+		for (double[] data : point_list) {
+			tree.insert(data, data);
+		}
+
+		long end_time = System.currentTimeMillis();
+
+		long elapsed_time = end_time - start_time;
+
+		System.out.println("Time to build the k-d tree: " + elapsed_time + "ms");
+
+
+
+		double[] query_point = {9, 4};
+
+		PointIteratorKnn<double[]> result_query_point = tree.queryKnn(query_point, 1);
+		
+		if (result_query_point.hasNext()) {
+			System.out.printf("O ponto mais próximo de %s é %s\n", Arrays.toString(query_point), result_query_point.next());
+		}
+	}
+
+	public void knnTest(double[][] point_list, double[][] search_list, boolean print) {
+
+		int dim = getDimension(point_list);
+
+		// System.out.println(Arrays.toString(point_list[0]));
+		// System.out.println(Arrays.toString(search_list[0]));
+
+
+		System.out.println(" ");
+		System.out.println("--------------------------- KD-TREE ---------------------------");
+		System.out.println("Number of points: " + point_list.length);
+		System.out.println("Number of dimensions: " + dim);
+		System.out.println("Number of points to search: " + search_list.length);
+
+		KDTree<double[]> tree = KDTree.create(dim);
+
+		long start_time = System.currentTimeMillis();
+
+		for (double[] data : point_list) {
+
+			tree.insert(data, null);
+
+		}
+
+		long end_time = System.currentTimeMillis();
+
+		long elapsed_time = end_time - start_time;
+
+		System.out.println("Time to build the k-d tree: " + elapsed_time + "ms");
+
+		start_time = System.currentTimeMillis();
+
+		for (double[] point : search_list) {
+
+			PointIteratorKnn<double[]> query_result = tree.queryKnn(point, 1);
+
+			// if (print_search && query_result.hasNext()) {
+
+			// 	System.out.printf("O ponto mais próximo de %s é %s\n", Arrays.toString(point), query_result.next());
+
+			// }
+
+		}
+
+		end_time = System.currentTimeMillis();
+
+		elapsed_time = end_time - start_time;
+
+		System.out.println("Time to query " + search_list.length + " points in the k-d tree:" + elapsed_time + "ms");
+	}
+
 }

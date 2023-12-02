@@ -23,8 +23,12 @@ import java.util.List;
 import java.util.Random;
 
 import org.junit.Test;
+import org.tinspin.index.Index.PointEntry;
+import org.tinspin.index.Index.PointEntryKnn;
+import org.tinspin.index.Index.PointIteratorKnn;
 import org.tinspin.index.PointDistance;
 import org.tinspin.index.covertree.CoverTree;
+import org.tinspin.index.rtree.RTreeMixedQueryTest;
 
 import static org.tinspin.index.Index.*;
 
@@ -307,4 +311,55 @@ public class CoverTreeTest {
 //			}
 //		}
 	}
+
+	public void knnTest(double[][] entries, double[][] search_list, boolean print) {
+
+		int dim = entries[0].length;
+
+		System.out.println(" ");
+		System.out.println("--------------------------- COVER-TREE ---------------------------");
+		System.out.println("DIMENSIONS -> " + dim);
+		System.out.println("Number of points: " + entries.length);
+		System.out.println("Number of points to search: " + search_list.length);
+
+		CoverTree<double[]> tree = CoverTree.create(dim);
+
+		long start_time = System.currentTimeMillis();
+
+		for (double[] data : entries) {
+
+			tree.insert(data, data);
+
+		}
+
+		long end_time = System.currentTimeMillis();
+
+		long elapsed_time = end_time - start_time;
+
+		System.out.println("Time to build the Cover-Tree: " + elapsed_time + "ms");
+
+		start_time = System.currentTimeMillis();
+
+		for (double[] point : search_list) {
+
+			// PointEntryKnn<double[]> query_result = tree.query1nn(point);
+			// OR
+			PointIteratorKnn<double[]> query_result = tree.queryKnn(point, 1);
+
+			if (print && query_result.hasNext()) {
+
+				System.out.printf("O ponto mais próximo de %s é %s", point, Arrays.toString(query_result.next().value()));
+
+			}
+
+		}
+
+		end_time = System.currentTimeMillis();
+
+		elapsed_time = end_time - start_time;
+
+		System.out.println("Time to find " + search_list.length + " points in the Cover-Tree:" + elapsed_time + "ms");
+
+	}
+
 }
